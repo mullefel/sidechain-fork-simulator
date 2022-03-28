@@ -1,0 +1,23 @@
+version: "3.3"
+services:
+  integritee-validateer-1:
+    build: ./validateer/
+    depends_on:
+      - "integritee-node"
+    environment: 
+      - RUST_LOG='info,info,ws=warn,sp_io=warn,substrate_api_client=warn,jsonrpsee_ws_client=warn,jsonrpsee_ws_server=warn,enclave_runtime=info,integritee_service=info,ita_stf=debug'
+    entrypoint: dockerize -wait tcp://integritee-node:9944 integritee --ws-external -u ws://integritee-node -U ws://integritee-worker-1 -P 2011 run --dev --skip-ra
+  integritee-validateer-2:
+    build: ./validateer/
+    depends_on:
+      - "integritee-validateer-1"
+    environment: 
+      - RUST_LOG='info,info,ws=warn,sp_io=warn,substrate_api_client=warn,jsonrpsee_ws_client=warn,jsonrpsee_ws_server=warn,enclave_runtime=info,integritee_service=info,ita_stf=debug'
+    entrypoint: dockerize -wait tcp://integritee-validateer-1:2011 integritee --ws-external -u ws://integritee-node -U ws://integritee-worker-2 -P 2012 run --dev --skip-ra
+  integritee-node:
+    image: "integritee/integritee-node-dev:1.0.7"
+    ports:
+      - "9944:9944"
+    command: --dev --rpc-methods unsafe --ws-external --rpc-external
+    logging:
+      driver: none
